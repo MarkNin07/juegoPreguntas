@@ -1,0 +1,7 @@
+com\aplicacion\requerimiento\model\Pregunta.class
+com\aplicacion\requerimiento\RequerimientoApplication.class
+com\aplicacion\requerimiento\model\Nivel.class
+com\aplicacion\requerimiento\model\Respuesta.class
+com\aplicacion\requerimiento\model\Concursante.class
+com\aplicacion\requerimiento\model\ConcursantePregunta.class
+com\aplicacion\requerimiento\model\Categoria.class
