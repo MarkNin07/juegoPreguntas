@@ -1,5 +1,8 @@
 package com.aplicacion.requerimiento;
 
+import com.aplicacion.requerimiento.model.Concursante;
+import com.aplicacion.requerimiento.model.ConcursantePregunta;
+import com.aplicacion.requerimiento.model.Pregunta;
 import com.aplicacion.requerimiento.respository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -35,9 +38,10 @@ public class RequerimientoApplication {
                 break;
             case 2:
                 System.out.println("Opcion #2");
+                crearHistoricoJuego();
                 break;
             case 3:
-                System.out.println("Opcion #3");
+                System.out.println("GRACIAS POR USAR LA APLICACION");
                 break;
             default:
                 System.out.println("Input invalido");
@@ -45,24 +49,71 @@ public class RequerimientoApplication {
         System.out.println("Termino");
     }
 
+    private static void crearHistoricoJuego() {
+
+        var historicoList = concursantePreguntaRepository.findHistoricoConcursantes();
+        String leftAlignFormat = "| %-15s | %-7d | %-15s | %-7d | %-15s | %-15s |%n";
+        System.out.format("+-----------------+---------+-----------------+---------+-----------------+-----------------+%n");
+        System.out.format("|     Nombre      | Puntaje |      Nivel      |  Grado  |    Tematica     |       Fecha     |%n");
+        System.out.format("+-----------------+---------+-----------------+---------+-----------------+-----------------+%n");
+
+        for (int i = 0; i < historicoList.size(); i++) {
+            System.out.printf(leftAlignFormat,
+                    historicoList.get(i).getNombreConcursante(),
+                    historicoList.get(i).getPuntajeAcum(),
+                    historicoList.get(i).getNombreNivel(),
+                    historicoList.get(i).getGradoDificultad(),
+                    historicoList.get(i).getTipoPregunta(),
+                    historicoList.get(i).getFechaJuego().toString());
+        }
+        System.out.format("+-----------------+---------+-----------------+---------+-----------------+-----------------+%n");
+    }
+
+    private static Concursante crearConcursante() {
+        Scanner userInput = new Scanner(System.in);
+        System.out.println("Como se llama el concursante");
+        String nombreConcursante = userInput.next();
+        Concursante nuevoConcursante = new Concursante();
+        nuevoConcursante.setAcumGan(0);
+        nuevoConcursante.setFechJuego(new Date());
+        nuevoConcursante.setJugando(true);
+        nuevoConcursante.setNombreUsu(nombreConcursante);
+        return concursanteRepository.save(nuevoConcursante);
+    }
+
+    private static void crearRegristoConcursante(Concursante concursanteGuardar,
+                                                 Pregunta preguntaRespondida,
+                                                 Boolean acerto) {
+        ConcursantePregunta resgitroNuevo = new ConcursantePregunta();
+        resgitroNuevo.setIdConcursante(concursanteGuardar.getId());
+        resgitroNuevo.setIdPregunta(preguntaRespondida.getId());
+        resgitroNuevo.setAcerResP(acerto);
+        concursantePreguntaRepository.save(resgitroNuevo);
+    }
 
     private static void nuevoJuego() {
+
+        Concursante concursanteActual = crearConcursante();
+
         Boolean salir = false;
         Integer[] arrayInteger = new Integer[]{1,2,3,4,5};
         List<Integer> nivelesList = new ArrayList<Integer>(Arrays.asList(arrayInteger));
 
         for (Integer nivel:nivelesList ) {
-            var deseaDejarDeJugar= createPreguntaOpciones(nivel);
+            var deseaDejarDeJugar= createPreguntaOpciones(nivel, concursanteActual);
             if(deseaDejarDeJugar){
                 break;
             }
         }
 
     }
-    private static Boolean createPreguntaOpciones(Integer nivelActual) {
+
+    private static Boolean createPreguntaOpciones(Integer nivelActual, Concursante jugador) {
         Boolean deseaDejarDeJugar = false;
+        String nivelPreguntas = "nivel " + nivelActual;
+
         String leftAlignFormat = "| %-85s | %-7d |%n";
-        var preguntasList = preguntaRepository.findPreguntasByNivel("nivel " + nivelActual);
+        var preguntasList = preguntaRepository.findPreguntasByNivel(nivelPreguntas);
         Random random = new Random();
         int numeroAleatorio = random.nextInt(5);
         var preguntaAletoriaSelect = preguntasList.get(numeroAleatorio);
@@ -73,7 +124,6 @@ public class RequerimientoApplication {
         System.out.format("+---------------------------------------------------------------------------------------+---------+%n");
         System.out.format("|Respuesta                                                                              |OPCION   |%n");
         System.out.format("+---------------------------------------------------------------------------------------+---------+%n");
-        // Aca bajariamos a base de datos para obtener las preguntas
 
         var respuestaList =  respuestaRepository.findRespuestaByIdPregunta(preguntaAletoriaSelect.getId());
         for (int i = 0; i < respuestaList.size(); i++) {
@@ -87,15 +137,25 @@ public class RequerimientoApplication {
         var vlorNumericoValido = conseguirRespuestaValida(valorNumericoValido, 4);
         if (Integer.valueOf(vlorNumericoValido) == 0){
             deseaDejarDeJugar = true;
+            System.out.println(" MUCHAS GRACIAS POR JUGAR VUELVA PRONTO, SU GANCIA ES DE: "+ jugador.getAcumGan());
         }else{
             var indiceRespuesta = Integer.valueOf(vlorNumericoValido)-1;
             var respuestaSelecionada = respuestaList.get(indiceRespuesta);
             if(respuestaSelecionada.getCorrecta()){
+                var ganaciaAcum = jugador.getAcumGan();
+                var nivelActualLista = nivelRepository.findNivelByNombre(nivelPreguntas);
+                jugador.setAcumGan(ganaciaAcum + nivelActualLista.get(0).getPremio());
                 System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                System.out.println("                    FELICITACIONES ACERTO LA RESPUESTA                       ");
+                System.out.println("            FELICITACIONES ACERTO LA RESPUESTA, GANO "+ nivelActualLista.get(0).getPremio());
                 System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                System.out.println("                   TIENE "+ jugador.getAcumGan() + " ACUMULADO ");
+                concursanteRepository.save(jugador);
+                crearRegristoConcursante(jugador, preguntaAletoriaSelect,true);
             }else{
                 System.out.println("Intentelo la proxima vez");
+                System.out.println(" MUCHAS GRACIAS POR JUGAR VUELVA PRONTO, SU GANCIA ES DE: "+ jugador.getAcumGan());
+                crearRegristoConcursante(jugador, preguntaAletoriaSelect,false);
+                deseaDejarDeJugar = true;
             }
         }
         return deseaDejarDeJugar;
