@@ -42,50 +42,63 @@ public class RequerimientoApplication {
             default:
                 System.out.println("Input invalido");
         }
-
         System.out.println("Termino");
     }
 
 
     private static void nuevoJuego() {
         Boolean salir = false;
-        createPreguntaOpciones();
-//        while(!salir){
-//
-//        }
+        Integer[] arrayInteger = new Integer[]{1,2,3,4,5};
+        List<Integer> nivelesList = new ArrayList<Integer>(Arrays.asList(arrayInteger));
+
+        for (Integer nivel:nivelesList ) {
+            var deseaDejarDeJugar= createPreguntaOpciones(nivel);
+            if(deseaDejarDeJugar){
+                break;
+            }
+        }
+
     }
-    private static void createPreguntaOpciones() {
-        String leftAlignFormat = "| %-72s | %-7d |%n";
-        var preguntasList = preguntaRepository.findPreguntasByNivel("nivel 1");
+    private static Boolean createPreguntaOpciones(Integer nivelActual) {
+        Boolean deseaDejarDeJugar = false;
+        String leftAlignFormat = "| %-85s | %-7d |%n";
+        var preguntasList = preguntaRepository.findPreguntasByNivel("nivel " + nivelActual);
         Random random = new Random();
         int numeroAleatorio = random.nextInt(5);
         var preguntaAletoriaSelect = preguntasList.get(numeroAleatorio);
-        System.out.format("+--------------------------------------------------------------------------+---------+%n");
-        System.out.format("|Pregunta                                                                  |NIVEL    |%n");
-        System.out.format("+--------------------------------------------------------------------------+---------+%n");
-        System.out.printf(leftAlignFormat, preguntaAletoriaSelect.getContenido(), 1 );
-        System.out.format("+--------------------------------------------------------------------------+---------+%n");
-        System.out.format("|Respuesta                                                                 |OPCION   |%n");
-        System.out.format("+--------------------------------------------------------------------------+---------+%n");
-        // Aca bajariamos a base de datos para optener las preguntas
+        System.out.format("+---------------------------------------------------------------------------------------+---------+%n");
+        System.out.format("|Pregunta                                                                               |NIVEL    |%n");
+        System.out.format("+---------------------------------------------------------------------------------------+---------+%n");
+        System.out.printf(leftAlignFormat, preguntaAletoriaSelect.getContenido(), nivelActual );
+        System.out.format("+---------------------------------------------------------------------------------------+---------+%n");
+        System.out.format("|Respuesta                                                                              |OPCION   |%n");
+        System.out.format("+---------------------------------------------------------------------------------------+---------+%n");
+        // Aca bajariamos a base de datos para obtener las preguntas
 
         var respuestaList =  respuestaRepository.findRespuestaByIdPregunta(preguntaAletoriaSelect.getId());
         for (int i = 0; i < respuestaList.size(); i++) {
             System.out.printf(leftAlignFormat, respuestaList.get(i).getContenido(), i + 1);
         }
-        System.out.format("| Salir                                                                    | 0       |%n");
-        System.out.format("+--------------------------------------------------------------------------+---------+%n");
+        System.out.format("| Salir                                                                                 | 0       |%n");
+        System.out.format("+---------------------------------------------------------------------------------------+---------+%n");
         Scanner userInput = new Scanner(System.in);
         System.out.println("Seleccione una opcion");
         String valorNumericoValido = userInput.next();
         var vlorNumericoValido = conseguirRespuestaValida(valorNumericoValido, 4);
-        var respuestaSelecionada = respuestaList.get(Integer.valueOf(vlorNumericoValido)-1);
-        if(respuestaSelecionada.getCorrecta()){
-            System.out.println("Felicitaciones acerto la pregunta");
+        if (Integer.valueOf(vlorNumericoValido) == 0){
+            deseaDejarDeJugar = true;
         }else{
-            System.out.println("Intentelo la proxima vez");
+            var indiceRespuesta = Integer.valueOf(vlorNumericoValido)-1;
+            var respuestaSelecionada = respuestaList.get(indiceRespuesta);
+            if(respuestaSelecionada.getCorrecta()){
+                System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                System.out.println("                    FELICITACIONES ACERTO LA RESPUESTA                       ");
+                System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            }else{
+                System.out.println("Intentelo la proxima vez");
+            }
         }
-
+        return deseaDejarDeJugar;
     }
 
     private static void createMenuInicial() {
